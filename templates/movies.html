@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Movies{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <h2 class="section-title mb-4">
+        <i class="bi bi-camera-reels text-danger"></i> All Movies
+    </h2>
+
+    <!-- FILTERS -->
+    <div class="filter-card mb-4">
+        <form action="{{ url_for('movies') }}" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control bg-dark text-white border-secondary"
+                       placeholder="🔍 Search movies..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <select name="language" class="form-select bg-dark text-white border-secondary">
+                    <option value="">All Languages</option>
+                    {% for lang in languages %}
+                        <option value="{{ lang.language }}"
+                                {% if selected_language == lang.language %}selected{% endif %}>
+                            {{ lang.language }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="genre" class="form-select bg-dark text-white border-secondary">
+                    <option value="">All Genres</option>
+                    {% for g in genres %}
+                        <option value="{{ g.genre }}"
+                                {% if selected_genre == g.genre %}selected{% endif %}>
+                            {{ g.genre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select bg-dark text-white border-secondary">
+                    <option value="">All Status</option>
+                    <option value="Now Showing" {% if selected_status == 'Now Showing' %}selected{% endif %}>
+                        Now Showing
+                    </option>
+                    <option value="Coming Soon" {% if selected_status == 'Coming Soon' %}selected{% endif %}>
+                        Coming Soon
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-danger w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+            <div class="col-md-1">
+                <a href="{{ url_for('movies') }}" class="btn btn-outline-light w-100">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- RESULTS COUNT -->
+    <p class="text-muted mb-3">Showing {{ movies|length }} movie(s)</p>
+
+    <!-- MOVIE GRID -->
+    <div class="row g-4">
+        {% for movie in movies %}
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="movie-card">
+                <div class="movie-poster-wrapper">
+                    <img src="{{ url_for('static', filename='images/' + (movie.poster or 'default.jpg')) }}"
+                         class="movie-poster" alt="{{ movie.title }}"
+                         onerror="this.src='https://via.placeholder.com/300x450/1a1a2e/e94560?text={{ movie.title }}'">
+                    <div class="movie-overlay">
+                        <a href="{{ url_for('movie_details', movie_id=movie.movie_id) }}"
+                           class="btn btn-danger">
+                            {% if movie.status == 'Now Showing' %}
+                                <i class="bi bi-ticket-perforated"></i> Book Now
+                            {% else %}
+                                <i class="bi bi-info-circle"></i> Details
+                            {% endif %}
+                        </a>
+                    </div>
+                    <span class="movie-rating-badge">
+                        <i class="bi bi-star-fill"></i> {{ movie.rating }}
+                    </span>
+                    <span class="movie-language-badge">{{ movie.language }}</span>
+                    {% if movie.status == 'Coming Soon' %}
+                    <div class="coming-soon-banner">COMING SOON</div>
+                    {% endif %}
+                </div>
+                <div class="movie-info">
+                    <h6 class="movie-title">{{ movie.title }}</h6>
+                    <p class="movie-genre">{{ movie.genre }} • {{ movie.duration }}</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-film display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">No movies found</h4>
+            <p class="text-muted">Try changing your search or filter criteria</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Booking History{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <h2 class="section-title">
+        <i class="bi bi-clock-history text-danger"></i> My Booking History
+    </h2>
+
+    {% if bookings %}
+    <div class="row g-4 mt-3">
+        {% for booking in bookings %}
+        <div class="col-md-6">
+            <div class="history-card {% if booking.status == 'cancelled' %}cancelled{% endif %}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="text-danger">{{ booking.title }}</h5>
+                        <p class="mb-1">
+                            <i class="bi bi-hash"></i> Booking ID: <strong>#{{ booking.booking_id }}</strong>
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-calendar"></i> {{ booking.show_date }}
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-clock"></i> {{ booking.show_time }}
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-grid-3x3"></i> Seats: <strong>{{ booking.seat_number }}</strong>
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-tv"></i> {{ booking.screen }}
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-credit-card"></i> {{ booking.payment_method }}
+                        </p>
+                        <p class="mb-2">
+                            <i class="bi bi-currency-rupee"></i>
+                            Total: <strong class="text-danger fs-5">₹{{ booking.total_amount }}</strong>
+                        </p>
+                    </div>
+                    <div>
+                        <span class="badge {% if booking.status == 'confirmed' %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+                            {{ booking.status|upper }}
+                        </span>
+                    </div>
+                </div>
+
+                <hr class="border-secondary">
+
+                <div class="d-flex gap-2">
+                    {% if booking.status == 'confirmed' %}
+                    <a href="{{ url_for('download_ticket', booking_id=booking.booking_id) }}"
+                       class="btn btn-danger btn-sm">
+                        <i class="bi bi-download"></i> Download Ticket
+                    </a>
+                    <a href="{{ url_for('cancel_booking', booking_id=booking.booking_id) }}"
+                       class="btn btn-outline-warning btn-sm"
+                       onclick="return confirm('Are you sure you want to cancel this booking?')">
+                        <i class="bi bi-x-circle"></i> Cancel Booking
+                    </a>
+                    {% else %}
+                    <span class="text-muted">
+                        <i class="bi bi-info-circle"></i> Booking has been cancelled
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-ticket-perforated display-1 text-muted"></i>
+        <h4 class="text-muted mt-3">No bookings yet</h4>
+        <p class="text-muted">Start by browsing and booking your favorite movies!</p>
+        <a href="{{ url_for('movies') }}" class="btn btn-danger mt-2">
+            <i class="bi bi-camera-reels"></i> Browse Movies
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

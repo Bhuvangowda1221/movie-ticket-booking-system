@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Net Banking{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="payment-card">
+                <h3 class="text-center mb-4">
+                    <i class="bi bi-bank text-info"></i> Net Banking
+                </h3>
+
+                <div class="payment-summary mb-4">
+                    <p><strong>Movie:</strong> {{ show.title }}</p>
+                    <p><strong>Seats:</strong> {{ seats|join(', ') }}</p>
+                    <h4 class="text-danger">Amount: ₹{{ total }}</h4>
+                </div>
+
+                <form method="POST" action="{{ url_for('confirm_booking') }}">
+                    <input type="hidden" name="payment_method" value="Net Banking">
+
+                    <div class="mb-3">
+                        <label class="form-label">Select Your Bank</label>
+                        <select class="form-select bg-dark text-white border-secondary" required>
+                            <option value="">-- Select Bank --</option>
+                            <option value="sbi">State Bank of India</option>
+                            <option value="hdfc">HDFC Bank</option>
+                            <option value="icici">ICICI Bank</option>
+                            <option value="axis">Axis Bank</option>
+                            <option value="kotak">Kotak Mahindra Bank</option>
+                            <option value="bob">Bank of Baroda</option>
+                            <option value="pnb">Punjab National Bank</option>
+                            <option value="canara">Canara Bank</option>
+                            <option value="union">Union Bank of India</option>
+                            <option value="idbi">IDBI Bank</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">User ID</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary"
+                               placeholder="Enter your net banking user ID" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control bg-dark text-white border-secondary"
+                               placeholder="Enter your password" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-info w-100 btn-lg mt-3 text-dark">
+                        <i class="bi bi-check-circle"></i> Pay ₹{{ total }}
+                    </button>
+                </form>
+
+                <a href="{{ url_for('payment') }}" class="btn btn-outline-light w-100 mt-2">
+                    <i class="bi bi-arrow-left"></i> Back to Payment Options
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

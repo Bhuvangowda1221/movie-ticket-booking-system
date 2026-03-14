@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Select Seats{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <h2 class="section-title text-center">
+        <i class="bi bi-grid-3x3 text-danger"></i> Select Your Seats
+    </h2>
+
+    <!-- Movie Info -->
+    <div class="text-center mb-4">
+        <h4 class="text-danger">{{ show.title }}</h4>
+        <p class="text-muted">
+            {{ show.show_time }} | {{ show.show_date }} | {{ show.screen }} |
+            <span class="text-danger fw-bold">₹{{ show.price }}</span> per seat
+        </p>
+    </div>
+
+    <!-- Screen -->
+    <div class="screen-container text-center mb-5">
+        <div class="screen">SCREEN</div>
+    </div>
+
+    <!-- Seat Layout -->
+    <form method="POST" action="{{ url_for('payment') }}" id="seatForm">
+        <input type="hidden" name="show_id" value="{{ show.show_id }}">
+
+        <div class="seat-layout">
+            {% set rows = {} %}
+            {% for seat in seats %}
+                {% set row_letter = seat.seat_number[0] %}
+                {% if row_letter not in rows %}
+                    {% if rows.update({row_letter: []}) %}{% endif %}
+                {% endif %}
+                {% if rows[row_letter].append(seat) %}{% endif %}
+            {% endfor %}
+
+            {% for row_letter in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] %}
+                {% if row_letter in rows %}
+                <div class="seat-row">
+                    <span class="row-label">{{ row_letter }}</span>
+                    <div class="seats-container">
+                        {% for seat in rows[row_letter]|sort(attribute='seat_number') %}
+                        <div class="seat-wrapper">
+                            {% if seat.status == 'booked' %}
+                            <div class="seat seat-booked" title="Booked">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            {% else %}
+                            <label class="seat seat-available" title="{{ seat.seat_number }}">
+                                <input type="checkbox" name="seats" value="{{ seat.seat_number }}"
+                                       class="seat-checkbox">
+                                <i class="bi bi-square"></i>
+                            </label>
+                            {% endif %}
+                            <small class="seat-label">{{ seat.seat_number }}</small>
+                        </div>
+                        {% if loop.index == 5 %}
+                        <div class="seat-gap"></div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Legend -->
+        <div class="seat-legend text-center mt-4">
+            <span class="legend-item">
+                <span class="legend-box legend-available"></span> Available
+            </span>
+            <span class="legend-item">
+                <span class="legend-box legend-selected"></span> Selected
+            </span>
+            <span class="legend-item">
+                <span class="legend-box legend-booked"></span> Booked
+            </span>
+        </div>
+
+        <!-- Booking Summary -->
+        <div class="booking-summary text-center mt-4">
+            <div class="summary-card">
+                <p>Selected Seats: <span id="selectedSeats" class="text-danger fw-bold">None</span></p>
+                <p>Total: <span id="totalAmount" class="text-danger fw-bold fs-4">₹0</span></p>
+                <button type="submit" class="btn btn-danger btn-lg px-5" id="proceedBtn" disabled>
+                    <i class="bi bi-credit-card"></i> Proceed to Payment
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% block scripts %}
+<script>
+    const pricePerSeat = {{ show.price }};
+
+    document.querySelectorAll('.seat-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSummary);
+    });
+
+    function updateSummary() {
+        const checked = document.querySelectorAll('.seat-checkbox:checked');
+        const seats = [];
+        checked.forEach(cb => seats.push(cb.value));
+
+        document.getElementById('selectedSeats').textContent =
+            seats.length > 0 ? seats.join(', ') : 'None';
+        document.getElementById('totalAmount').textContent =
+            '₹' + (seats.length * pricePerSeat);
+        document.getElementById('proceedBtn').disabled = seats.length === 0;
+
+        // Toggle selected visual class
+        document.querySelectorAll('.seat-available').forEach(seat => {
+            const cb = seat.querySelector('.seat-checkbox');
+            if (cb.checked) {
+                seat.classList.add('seat-selected');
+            } else {
+                seat.classList.remove('seat-selected');
+            }
+        });
+    }
+</script>
+{% endblock %}
+{% endblock %}

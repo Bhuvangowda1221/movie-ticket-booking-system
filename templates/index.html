@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}Home — Book Movie Tickets{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content text-center">
+        <h1 class="display-3 fw-bold animate-fade-in">
+            🎬 Book Your <span class="text-danger">Movie</span> Tickets
+        </h1>
+        <p class="lead mt-3 animate-fade-in">
+            Experience cinema like never before. Browse, book, and enjoy!
+        </p>
+        <a href="{{ url_for('movies') }}" class="btn btn-danger btn-lg mt-4 px-5 animate-fade-in">
+            <i class="bi bi-ticket-perforated"></i> Browse Movies
+        </a>
+    </div>
+</section>
+
+<!-- FILTER BAR -->
+<section class="filter-section py-3">
+    <div class="container">
+        <form action="{{ url_for('movies') }}" method="GET" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <select name="language" class="form-select bg-dark text-white border-secondary">
+                    <option value="">All Languages</option>
+                    {% for lang in languages %}
+                        <option value="{{ lang.language }}">{{ lang.language }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="genre" class="form-select bg-dark text-white border-secondary">
+                    <option value="">All Genres</option>
+                    {% for g in genres %}
+                        <option value="{{ g.genre }}">{{ g.genre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-danger w-100">
+                    <i class="bi bi-funnel"></i> Filter Movies
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- NOW SHOWING -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="section-title">
+            <i class="bi bi-play-circle text-danger"></i> Now Showing
+        </h2>
+        <div class="row g-4">
+            {% for movie in now_showing[:8] %}
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="movie-card">
+                    <div class="movie-poster-wrapper">
+                        <img src="{{ url_for('static', filename='images/' + (movie.poster or 'default.jpg')) }}"
+                             class="movie-poster" alt="{{ movie.title }}"
+                             onerror="this.src='https://via.placeholder.com/300x450/1a1a2e/e94560?text={{ movie.title }}'">
+                        <div class="movie-overlay">
+                            <a href="{{ url_for('movie_details', movie_id=movie.movie_id) }}"
+                               class="btn btn-danger">
+                                <i class="bi bi-ticket-perforated"></i> Book Now
+                            </a>
+                        </div>
+                        <span class="movie-rating-badge">
+                            <i class="bi bi-star-fill"></i> {{ movie.rating }}
+                        </span>
+                        <span class="movie-language-badge">{{ movie.language }}</span>
+                    </div>
+                    <div class="movie-info">
+                        <h6 class="movie-title">{{ movie.title }}</h6>
+                        <p class="movie-genre">{{ movie.genre }} • {{ movie.duration }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- TRENDING -->
+<section class="py-5 bg-section-dark">
+    <div class="container">
+        <h2 class="section-title">
+            <i class="bi bi-fire text-danger"></i> Trending Movies
+        </h2>
+        <div class="row g-4">
+            {% for movie in trending %}
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="movie-card">
+                    <div class="movie-poster-wrapper">
+                        <img src="{{ url_for('static', filename='images/' + (movie.poster or 'default.jpg')) }}"
+                             class="movie-poster" alt="{{ movie.title }}"
+                             onerror="this.src='https://via.placeholder.com/300x450/1a1a2e/e94560?text={{ movie.title }}'">
+                        <div class="movie-overlay">
+                            <a href="{{ url_for('movie_details', movie_id=movie.movie_id) }}"
+                               class="btn btn-danger">
+                                <i class="bi bi-ticket-perforated"></i> Book Now
+                            </a>
+                        </div>
+                        <span class="movie-rating-badge">
+                            <i class="bi bi-star-fill"></i> {{ movie.rating }}
+                        </span>
+                        <span class="movie-language-badge">{{ movie.language }}</span>
+                    </div>
+                    <div class="movie-info">
+                        <h6 class="movie-title">{{ movie.title }}</h6>
+                        <p class="movie-genre">{{ movie.genre }} • {{ movie.duration }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- COMING SOON -->
+{% if coming_soon %}
+<section class="py-5">
+    <div class="container">
+        <h2 class="section-title">
+            <i class="bi bi-calendar-event text-danger"></i> Coming Soon
+        </h2>
+        <div class="row g-4">
+            {% for movie in coming_soon %}
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="movie-card coming-soon-card">
+                    <div class="movie-poster-wrapper">
+                        <img src="{{ url_for('static', filename='images/' + (movie.poster or 'default.jpg')) }}"
+                             class="movie-poster" alt="{{ movie.title }}"
+                             onerror="this.src='https://via.placeholder.com/300x450/1a1a2e/e94560?text={{ movie.title }}'">
+                        <div class="coming-soon-banner">COMING SOON</div>
+                        <span class="movie-language-badge">{{ movie.language }}</span>
+                    </div>
+                    <div class="movie-info">
+                        <h6 class="movie-title">{{ movie.title }}</h6>
+                        <p class="movie-genre">{{ movie.genre }} • {{ movie.language }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

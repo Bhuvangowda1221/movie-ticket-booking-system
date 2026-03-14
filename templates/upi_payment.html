@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}UPI Payment{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="payment-card text-center">
+                <h3 class="mb-4">
+                    <i class="bi bi-phone text-primary"></i> UPI Payment
+                </h3>
+
+                <div class="payment-summary mb-4">
+                    <p><strong>Movie:</strong> {{ show.title }}</p>
+                    <p><strong>Seats:</strong> {{ seats|join(', ') }}</p>
+                    <h4 class="text-danger">Amount: ₹{{ total }}</h4>
+                </div>
+
+                <hr class="border-secondary">
+
+                <!-- QR Code -->
+                <div class="qr-code-container my-4">
+                    <h5>Scan QR Code to Pay</h5>
+                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code"
+                         class="qr-code-img my-3">
+                    <p class="text-muted">UPI ID: <strong class="text-white">{{ upi_id }}</strong></p>
+                    <p class="text-muted">Amount: <strong class="text-danger">₹{{ total }}</strong></p>
+                </div>
+
+                <hr class="border-secondary">
+
+                <!-- Manual UPI -->
+                <div class="mt-4">
+                    <h5>Or Enter UPI ID</h5>
+                    <form method="POST" action="{{ url_for('confirm_booking') }}">
+                        <input type="hidden" name="payment_method" value="UPI">
+                        <div class="mb-3">
+                            <input type="text" class="form-control bg-dark text-white border-secondary text-center"
+                                   placeholder="yourname@upi" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg">
+                            <i class="bi bi-check-circle"></i> Confirm Payment ₹{{ total }}
+                        </button>
+                    </form>
+                </div>
+
+                <a href="{{ url_for('payment') }}" class="btn btn-outline-light w-100 mt-3">
+                    <i class="bi bi-arrow-left"></i> Back to Payment Options
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

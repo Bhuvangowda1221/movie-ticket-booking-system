@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Credit Card Payment{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="payment-card">
+                <h3 class="text-center mb-4">
+                    <i class="bi bi-credit-card-2-front text-warning"></i> Credit Card Payment
+                </h3>
+
+                <div class="payment-summary mb-4">
+                    <p><strong>Movie:</strong> {{ show.title }}</p>
+                    <p><strong>Seats:</strong> {{ seats|join(', ') }}</p>
+                    <h4 class="text-danger">Amount: ₹{{ total }}</h4>
+                </div>
+
+                <form method="POST" action="{{ url_for('confirm_booking') }}">
+                    <input type="hidden" name="payment_method" value="Credit Card">
+
+                    <div class="mb-3">
+                        <label class="form-label">Card Number</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary"
+                               placeholder="1234 5678 9012 3456" maxlength="19" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cardholder Name</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary"
+                               placeholder="Name on card" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Expiry Date</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary"
+                                   placeholder="MM/YY" maxlength="5" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">CVV</label>
+                            <input type="password" class="form-control bg-dark text-white border-secondary"
+                                   placeholder="***" maxlength="3" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning w-100 btn-lg mt-3 text-dark">
+                        <i class="bi bi-check-circle"></i> Pay ₹{{ total }}
+                    </button>
+                </form>
+
+                <a href="{{ url_for('payment') }}" class="btn btn-outline-light w-100 mt-2">
+                    <i class="bi bi-arrow-left"></i> Back to Payment Options
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
