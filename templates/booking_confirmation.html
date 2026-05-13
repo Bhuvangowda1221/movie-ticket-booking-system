@@ -35,6 +35,14 @@
                             <h5>{{ booking.title }}</h5>
                         </div>
                         <div class="col-6 mb-3">
+                            <small class="text-muted">Theatre</small>
+                            <h6><i class="bi bi-building text-danger"></i> {{ booking.theatre_name }}</h6>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <small class="text-muted">Location</small>
+                            <h6><i class="bi bi-geo-alt text-danger"></i> {{ booking.city_name }}</h6>
+                        </div>
+                        <div class="col-6 mb-3">
                             <small class="text-muted">Date</small>
                             <h6>{{ booking.show_date }}</h6>
                         </div>
@@ -56,7 +64,7 @@
                         </div>
                         <div class="col-6 mb-3">
                             <small class="text-muted">Total Amount</small>
-                            <h5 class="text-danger">₹{{ booking.total_amount }}</h5>
+                            <h5 class="text-danger">&#8377;{{ booking.total_amount }}</h5>
                         </div>
                     </div>
                 </div>

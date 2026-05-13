@@ -5,14 +5,28 @@
 <div class="container mt-5 pt-4">
     <h2 class="section-title mb-4">
         <i class="bi bi-camera-reels text-danger"></i> All Movies
+        {% if selected_city %}
+        <small class="text-muted fs-6 ms-2">in {{ selected_city }}</small>
+        {% endif %}
     </h2>
 
     <!-- FILTERS -->
     <div class="filter-card mb-4">
         <form action="{{ url_for('movies') }}" method="GET" class="row g-3">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <input type="text" name="search" class="form-control bg-dark text-white border-secondary"
-                       placeholder="🔍 Search movies..." value="{{ search }}">
+                       placeholder="Search movies..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <select name="city" class="form-select bg-dark text-white border-secondary">
+                    <option value="">All Cities</option>
+                    {% for loc in locations %}
+                        <option value="{{ loc.city_name }}"
+                                {% if selected_city == loc.city_name %}selected{% endif %}>
+                            {{ loc.city_name }}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
             <div class="col-md-2">
                 <select name="language" class="form-select bg-dark text-white border-secondary">
@@ -47,9 +61,9 @@
                     </option>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1">
                 <button type="submit" class="btn btn-danger w-100">
-                    <i class="bi bi-funnel"></i> Filter
+                    <i class="bi bi-funnel"></i>
                 </button>
             </div>
             <div class="col-md-1">
@@ -92,7 +106,7 @@
                 </div>
                 <div class="movie-info">
                     <h6 class="movie-title">{{ movie.title }}</h6>
-                    <p class="movie-genre">{{ movie.genre }} • {{ movie.duration }}</p>
+                    <p class="movie-genre">{{ movie.genre }} &bull; {{ movie.duration }}</p>
                 </div>
             </div>
         </div>

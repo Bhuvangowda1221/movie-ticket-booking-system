@@ -69,6 +69,28 @@ def init_db():
         )
     ''')
 
+    # Create Locations table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS locations (
+            location_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            city_name TEXT NOT NULL,
+            state TEXT NOT NULL
+        )
+    ''')
+
+    # Create Theatres table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS theatres (
+            theatre_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            theatre_name TEXT NOT NULL,
+            location_id INTEGER NOT NULL,
+            address TEXT,
+            total_screens INTEGER DEFAULT 3,
+            rating REAL DEFAULT 4.0,
+            FOREIGN KEY(location_id) REFERENCES locations(location_id)
+        )
+    ''')
+
     # Create Movies table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS movies (
@@ -90,11 +112,13 @@ def init_db():
         CREATE TABLE IF NOT EXISTS shows (
             show_id INTEGER PRIMARY KEY AUTOINCREMENT,
             movie_id INTEGER NOT NULL,
+            theatre_id INTEGER NOT NULL,
             show_time TEXT NOT NULL,
             show_date TEXT NOT NULL,
             screen TEXT NOT NULL,
             price INTEGER NOT NULL,
-            FOREIGN KEY(movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE
+            FOREIGN KEY(movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE,
+            FOREIGN KEY(theatre_id) REFERENCES theatres(theatre_id) ON DELETE CASCADE
         )
     ''')
 
@@ -207,19 +231,56 @@ def init_db():
             sample_movies
         )
 
-        # Insert sample shows for each movie
+        # Insert sample locations
+        sample_locations = [
+            ('Bangalore', 'Karnataka'),
+            ('Mumbai', 'Maharashtra'),
+            ('Delhi', 'Delhi'),
+            ('Chennai', 'Tamil Nadu'),
+            ('Hyderabad', 'Telangana'),
+            ('Kolkata', 'West Bengal'),
+        ]
+        cursor.executemany(
+            'INSERT INTO locations (city_name, state) VALUES (?, ?)',
+            sample_locations
+        )
+
+        # Insert sample theatres
+        sample_theatres = [
+            ('PVR Orion Mall', 1, 'Dr. Rajkumar Road, Rajajinagar', 4, 4.5),
+            ('INOX Garuda Mall', 1, 'Magrath Road, Ashok Nagar', 3, 4.3),
+            ('Cinepolis Royal Meenakshi', 1, 'Bannerghatta Road', 5, 4.6),
+            ('PVR Phoenix', 2, 'Senapati Bapat Marg, Lower Parel', 6, 4.4),
+            ('INOX R-City', 2, 'LBS Marg, Ghatkopar', 4, 4.2),
+            ('PVR Select Citywalk', 3, 'Saket District Centre', 5, 4.7),
+            ('INOX Nehru Place', 3, 'Nehru Place', 3, 4.1),
+            ('SPI Palazzo', 4, 'Montieth Road, Egmore', 4, 4.5),
+            ('AGS Cinemas', 4, 'T. Nagar', 3, 4.0),
+            ('PVR Next Galleria', 5, 'Panjagutta', 5, 4.3),
+            ('INOX GVK One', 5, 'Banjara Hills', 4, 4.4),
+            ('INOX Quest Mall', 6, 'Park Circus', 3, 4.2),
+        ]
+        cursor.executemany(
+            '''INSERT INTO theatres (theatre_name, location_id, address, total_screens, rating)
+               VALUES (?, ?, ?, ?, ?)''',
+            sample_theatres
+        )
+
+        # Insert sample shows for each movie (distributed across theatres)
         show_times = ['10:00 AM', '1:30 PM', '4:00 PM', '7:30 PM', '10:00 PM']
         screens = ['Screen 1', 'Screen 2', 'Screen 3']
         prices = [150, 200, 250, 300, 350]
         today = date.today().strftime('%Y-%m-%d')
 
         movie_count = len(sample_movies)
+        theatre_count = len(sample_theatres)
         for mid in range(1, movie_count + 1):
             for i, st in enumerate(show_times):
+                tid = ((mid + i) % theatre_count) + 1
                 cursor.execute(
-                    '''INSERT INTO shows (movie_id, show_time, show_date, screen, price)
-                       VALUES (?, ?, ?, ?, ?)''',
-                    (mid, st, today, screens[i % len(screens)], prices[i])
+                    '''INSERT INTO shows (movie_id, theatre_id, show_time, show_date, screen, price)
+                       VALUES (?, ?, ?, ?, ?, ?)''',
+                    (mid, tid, st, today, screens[i % len(screens)], prices[i])
                 )
 
         # Insert seats for each show
@@ -272,6 +333,12 @@ def admin_required(f):
 @app.route('/')
 def index():
     db = get_db()
+    selected_city = request.args.get('city', '')
+
+    # Get all locations for city selector
+    locations = db.execute(
+        "SELECT * FROM locations ORDER BY city_name"
+    ).fetchall()
 
     # Featured / Now Showing movies
     now_showing = db.execute(
@@ -302,7 +369,9 @@ def index():
         coming_soon=coming_soon,
         trending=trending,
         languages=languages,
-        genres=genres
+        genres=genres,
+        locations=locations,
+        selected_city=selected_city
     )
 
 
@@ -405,6 +474,17 @@ def movies():
         query += " AND status = ?"
         params.append(status)
 
+    # City filter — only show movies that have shows in selected city
+    city = request.args.get('city', '')
+    if city:
+        query += """ AND movie_id IN (
+            SELECT DISTINCT s.movie_id FROM shows s
+            JOIN theatres t ON s.theatre_id = t.theatre_id
+            JOIN locations l ON t.location_id = l.location_id
+            WHERE l.city_name = ?
+        )"""
+        params.append(city)
+
     query += " ORDER BY rating DESC"
     movies_list = db.execute(query, params).fetchall()
 
@@ -415,16 +495,21 @@ def movies():
     genres = db.execute(
         "SELECT DISTINCT genre FROM movies ORDER BY genre"
     ).fetchall()
+    locations = db.execute(
+        "SELECT * FROM locations ORDER BY city_name"
+    ).fetchall()
 
     return render_template(
         'movies.html',
         movies=movies_list,
         languages=languages,
         genres=genres,
+        locations=locations,
         search=search,
         selected_language=language,
         selected_genre=genre,
-        selected_status=status
+        selected_status=status,
+        selected_city=city
     )
 
 
@@ -439,9 +524,15 @@ def movie_details(movie_id):
         flash('Movie not found!', 'danger')
         return redirect(url_for('movies'))
 
-    # Get shows for this movie
+    # Get shows for this movie with theatre and location info
     shows = db.execute(
-        "SELECT * FROM shows WHERE movie_id = ? ORDER BY show_time",
+        '''SELECT s.*, t.theatre_name, t.rating as theatre_rating, t.address,
+                  l.city_name, l.state
+           FROM shows s
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
+           WHERE s.movie_id = ?
+           ORDER BY l.city_name, t.theatre_name, s.show_time''',
         (movie_id,)
     ).fetchall()
 
@@ -478,8 +569,11 @@ def seats(show_id):
     db = get_db()
 
     show = db.execute(
-        '''SELECT s.*, m.title, m.poster FROM shows s
+        '''SELECT s.*, m.title, m.poster, t.theatre_name, t.address, l.city_name, l.state
+           FROM shows s
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE s.show_id = ?''',
         (show_id,)
     ).fetchone()
@@ -511,8 +605,11 @@ def payment():
 
     db = get_db()
     show = db.execute(
-        '''SELECT s.*, m.title, m.poster FROM shows s
+        '''SELECT s.*, m.title, m.poster, t.theatre_name, l.city_name
+           FROM shows s
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE s.show_id = ?''',
         (show_id,)
     ).fetchone()
@@ -539,8 +636,10 @@ def debit_card():
         return redirect(url_for('movies'))
     db = get_db()
     show = db.execute(
-        '''SELECT s.*, m.title FROM shows s
+        '''SELECT s.*, m.title, t.theatre_name, l.city_name FROM shows s
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE s.show_id = ?''',
         (session['booking_show_id'],)
     ).fetchone()
@@ -559,8 +658,10 @@ def credit_card():
         return redirect(url_for('movies'))
     db = get_db()
     show = db.execute(
-        '''SELECT s.*, m.title FROM shows s
+        '''SELECT s.*, m.title, t.theatre_name, l.city_name FROM shows s
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE s.show_id = ?''',
         (session['booking_show_id'],)
     ).fetchone()
@@ -596,8 +697,10 @@ def upi_payment():
 
     db = get_db()
     show = db.execute(
-        '''SELECT s.*, m.title FROM shows s
+        '''SELECT s.*, m.title, t.theatre_name, l.city_name FROM shows s
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE s.show_id = ?''',
         (session['booking_show_id'],)
     ).fetchone()
@@ -619,8 +722,10 @@ def netbanking():
         return redirect(url_for('movies'))
     db = get_db()
     show = db.execute(
-        '''SELECT s.*, m.title FROM shows s
+        '''SELECT s.*, m.title, t.theatre_name, l.city_name FROM shows s
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE s.show_id = ?''',
         (session['booking_show_id'],)
     ).fetchone()
@@ -693,10 +798,13 @@ def confirm_booking():
 
     # Get booking details for confirmation page
     booking = db.execute(
-        '''SELECT b.*, s.show_time, s.show_date, s.screen, s.price, m.title, m.poster
+        '''SELECT b.*, s.show_time, s.show_date, s.screen, s.price, m.title, m.poster,
+                  t.theatre_name, l.city_name
            FROM bookings b
            JOIN shows s ON b.show_id = s.show_id
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE b.booking_id = ?''',
         (booking_id,)
     ).fetchone()
@@ -712,10 +820,13 @@ def confirm_booking():
 def booking_history():
     db = get_db()
     bookings = db.execute(
-        '''SELECT b.*, s.show_time, s.show_date, s.screen, s.price, m.title, m.poster
+        '''SELECT b.*, s.show_time, s.show_date, s.screen, s.price, m.title, m.poster,
+                  t.theatre_name, l.city_name
            FROM bookings b
            JOIN shows s ON b.show_id = s.show_id
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE b.user_id = ?
            ORDER BY b.booking_date DESC''',
         (session['user_id'],)
@@ -771,10 +882,15 @@ def cancel_booking(booking_id):
 def download_ticket(booking_id):
     db = get_db()
     booking = db.execute(
-        '''SELECT b.*, s.show_time, s.show_date, s.screen, s.price, m.title, m.language, m.duration
+        '''SELECT b.*, s.show_time, s.show_date, s.screen, s.price,
+                  m.title, m.language, m.duration,
+                  t.theatre_name, t.address as theatre_address,
+                  l.city_name, l.state
            FROM bookings b
            JOIN shows s ON b.show_id = s.show_id
            JOIN movies m ON s.movie_id = m.movie_id
+           JOIN theatres t ON s.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            WHERE b.booking_id = ? AND b.user_id = ?''',
         (booking_id, session['user_id'])
     ).fetchone()
@@ -799,34 +915,36 @@ def download_ticket(booking_id):
     # Title
     p.setFillColor(colors.white)
     p.setFont("Helvetica-Bold", 28)
-    p.drawCentredString(width / 2, height - 55, "🎬 MOVIE TICKET")
+    p.drawCentredString(width / 2, height - 55, "MOVIE TICKET")
     p.setFont("Helvetica", 12)
-    p.drawCentredString(width / 2, height - 80, "MovieBook — Your Cinema Experience")
+    p.drawCentredString(width / 2, height - 80, "MovieBook - Your Cinema Experience")
 
     # Ticket body
     p.setFillColor(HexColor('#16213e'))
-    p.roundRect(40, height - 520, width - 80, 400, 15, fill=True)
+    p.roundRect(40, height - 560, width - 80, 440, 15, fill=True)
 
     # Movie info
     y = height - 150
     p.setFillColor(HexColor('#e94560'))
     p.setFont("Helvetica-Bold", 20)
-    p.drawString(70, y, f"🎥 {booking['title']}")
+    p.drawString(70, y, booking['title'])
 
     y -= 40
     p.setFillColor(colors.white)
     p.setFont("Helvetica", 14)
     info_items = [
-        f"📋 Booking ID: #{booking['booking_id']}",
-        f"📅 Date: {booking['show_date']}",
-        f"⏰ Show Time: {booking['show_time']}",
-        f"🏛️ Screen: {booking['screen']}",
-        f"💺 Seats: {booking['seat_number']}",
-        f"🌐 Language: {booking['language']}",
-        f"⏱️ Duration: {booking['duration']}",
-        f"💳 Payment: {booking['payment_method']}",
-        f"💰 Total Amount: ₹{booking['total_amount']}",
-        f"📆 Booked On: {booking['booking_date']}",
+        f"Booking ID: #{booking['booking_id']}",
+        f"Date: {booking['show_date']}",
+        f"Show Time: {booking['show_time']}",
+        f"Theatre: {booking['theatre_name']}",
+        f"Location: {booking['city_name']}, {booking['state']}",
+        f"Screen: {booking['screen']}",
+        f"Seats: {booking['seat_number']}",
+        f"Language: {booking['language']}",
+        f"Duration: {booking['duration']}",
+        f"Payment: {booking['payment_method']}",
+        f"Total Amount: Rs.{booking['total_amount']}",
+        f"Booked On: {booking['booking_date']}",
     ]
 
     for item in info_items:
@@ -843,7 +961,7 @@ def download_ticket(booking_id):
     y -= 30
     p.setFont("Helvetica-Bold", 12)
     p.setFillColor(HexColor('#e94560'))
-    p.drawCentredString(width / 2, y, "★ Enjoy Your Movie! ★")
+    p.drawCentredString(width / 2, y, "* Enjoy Your Movie! *")
 
     y -= 25
     p.setFont("Helvetica", 10)
@@ -947,9 +1065,21 @@ def admin_dashboard():
     ).fetchall()
 
     shows_list = db.execute(
-        '''SELECT sh.*, m.title FROM shows sh
+        '''SELECT sh.*, m.title, t.theatre_name, l.city_name FROM shows sh
            JOIN movies m ON sh.movie_id = m.movie_id
+           JOIN theatres t ON sh.theatre_id = t.theatre_id
+           JOIN locations l ON t.location_id = l.location_id
            ORDER BY sh.show_date, sh.show_time'''
+    ).fetchall()
+
+    theatres_list = db.execute(
+        '''SELECT t.*, l.city_name, l.state FROM theatres t
+           JOIN locations l ON t.location_id = l.location_id
+           ORDER BY l.city_name, t.theatre_name'''
+    ).fetchall()
+
+    locations_list = db.execute(
+        "SELECT * FROM locations ORDER BY city_name"
     ).fetchall()
 
     return render_template(
@@ -961,7 +1091,9 @@ def admin_dashboard():
         popular_movie=popular,
         movies=movies_list,
         bookings=bookings_list,
-        shows=shows_list
+        shows=shows_list,
+        theatres=theatres_list,
+        locations=locations_list
     )
 
 
@@ -1060,6 +1192,7 @@ def delete_movie(movie_id):
 @admin_required
 def add_show():
     movie_id = request.form['movie_id']
+    theatre_id = request.form['theatre_id']
     show_time = request.form['show_time']
     show_date = request.form['show_date']
     screen = request.form['screen']
@@ -1067,9 +1200,9 @@ def add_show():
 
     db = get_db()
     cursor = db.execute(
-        '''INSERT INTO shows (movie_id, show_time, show_date, screen, price)
-           VALUES (?, ?, ?, ?, ?)''',
-        (movie_id, show_time, show_date, screen, price)
+        '''INSERT INTO shows (movie_id, theatre_id, show_time, show_date, screen, price)
+           VALUES (?, ?, ?, ?, ?, ?)''',
+        (movie_id, theatre_id, show_time, show_date, screen, price)
     )
     show_id = cursor.lastrowid
 
@@ -1103,13 +1236,67 @@ def delete_show(show_id):
 
 
 # ============================================================
+# ROUTES — ADMIN: ADD THEATRE
+# ============================================================
+@app.route('/admin/add_theatre', methods=['POST'])
+@admin_required
+def add_theatre():
+    theatre_name = request.form['theatre_name']
+    location_id = request.form['location_id']
+    address = request.form.get('address', '')
+    total_screens = request.form.get('total_screens', 3)
+
+    db = get_db()
+    db.execute(
+        '''INSERT INTO theatres (theatre_name, location_id, address, total_screens)
+           VALUES (?, ?, ?, ?)''',
+        (theatre_name, location_id, address, total_screens)
+    )
+    db.commit()
+    flash('Theatre added successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+# ============================================================
+# ROUTES — ADMIN: ADD LOCATION
+# ============================================================
+@app.route('/admin/add_location', methods=['POST'])
+@admin_required
+def add_location():
+    city_name = request.form['city_name']
+    state = request.form['state']
+
+    db = get_db()
+    db.execute(
+        'INSERT INTO locations (city_name, state) VALUES (?, ?)',
+        (city_name, state)
+    )
+    db.commit()
+    flash('Location added successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+# ============================================================
+# API — AVAILABLE SEATS COUNT
+# ============================================================
+@app.route('/api/seats_count/<int:show_id>')
+def seats_count(show_id):
+    db = get_db()
+    count = db.execute(
+        "SELECT COUNT(*) FROM seats WHERE show_id = ? AND status = 'available'",
+        (show_id,)
+    ).fetchone()[0]
+    return jsonify({'available': count})
+
+
+# ============================================================
 # RUN THE APPLICATION
 # ============================================================
 if __name__ == '__main__':
     init_db()
     print("\n" + "=" * 50)
-    print("🎬 Movie Ticket Booking System is running!")
-    print("🌐 Open: http://127.0.0.1:5000")
-    print("👤 Admin: admin@movie.com / admin123")
-    print("=" * 50 + "\n")
-    app.run(host="0.0.0.0", port=10000)
+    print("Movie Ticket Booking System is running!")
+    print("Open: http://127.0.0.1:5000")
+    print("Admin: admin@movie.com / admin123")
+    print("-" * 50 + "\n")
+    app.run(host="0.0.0.0", port=5000, debug=False)

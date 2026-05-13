@@ -14,13 +14,18 @@
                 <div class="payment-summary mb-4">
                     <h5 class="text-danger">{{ show.title }}</h5>
                     <p class="mb-1">
+                        <i class="bi bi-building"></i> <strong>{{ show.theatre_name }}</strong>
+                        &nbsp;&bull;&nbsp;
+                        <i class="bi bi-geo-alt"></i> {{ show.city_name }}
+                    </p>
+                    <p class="mb-1">
                         <i class="bi bi-clock"></i> {{ show.show_time }} |
                         <i class="bi bi-calendar"></i> {{ show.show_date }}
                     </p>
                     <p class="mb-1">
                         <i class="bi bi-grid-3x3"></i> Seats: {{ selected_seats|join(', ') }}
                     </p>
-                    <h4 class="text-danger mt-2">Total: ₹{{ total }}</h4>
+                    <h4 class="text-danger mt-2">Total: &#8377;{{ total }}</h4>
                 </div>
 
                 <hr class="border-secondary">

@@ -10,9 +10,14 @@
     <!-- Movie Info -->
     <div class="text-center mb-4">
         <h4 class="text-danger">{{ show.title }}</h4>
+        <p class="mb-1">
+            <i class="bi bi-building"></i> <strong>{{ show.theatre_name }}</strong>
+            &nbsp;&bull;&nbsp;
+            <i class="bi bi-geo-alt"></i> {{ show.city_name }}
+        </p>
         <p class="text-muted">
             {{ show.show_time }} | {{ show.show_date }} | {{ show.screen }} |
-            <span class="text-danger fw-bold">₹{{ show.price }}</span> per seat
+            <span class="text-danger fw-bold">&#8377;{{ show.price }}</span> per seat
         </p>
     </div>
 

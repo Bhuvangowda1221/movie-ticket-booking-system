@@ -19,6 +19,12 @@
                             <i class="bi bi-hash"></i> Booking ID: <strong>#{{ booking.booking_id }}</strong>
                         </p>
                         <p class="mb-1">
+                            <i class="bi bi-building"></i> <strong>{{ booking.theatre_name }}</strong>
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-geo-alt"></i> {{ booking.city_name }}
+                        </p>
+                        <p class="mb-1">
                             <i class="bi bi-calendar"></i> {{ booking.show_date }}
                         </p>
                         <p class="mb-1">
@@ -35,7 +41,7 @@
                         </p>
                         <p class="mb-2">
                             <i class="bi bi-currency-rupee"></i>
-                            Total: <strong class="text-danger fs-5">₹{{ booking.total_amount }}</strong>
+                            Total: <strong class="text-danger fs-5">&#8377;{{ booking.total_amount }}</strong>
                         </p>
                     </div>
                     <div>

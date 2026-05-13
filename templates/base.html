@@ -35,6 +35,23 @@
                             <i class="bi bi-camera-reels"></i> Movies
                         </a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button"
+                           data-bs-toggle="dropdown">
+                            <i class="bi bi-geo-alt-fill text-danger"></i>
+                            {{ request.args.get('city', 'All Cities') }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item" href="{{ url_for('movies') }}">All Cities</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('movies', city='Bangalore') }}">Bangalore</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('movies', city='Mumbai') }}">Mumbai</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('movies', city='Delhi') }}">Delhi</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('movies', city='Chennai') }}">Chennai</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('movies', city='Hyderabad') }}">Hyderabad</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('movies', city='Kolkata') }}">Kolkata</a></li>
+                        </ul>
+                    </li>
                 </ul>
                 <!-- Search Bar -->
                 <form class="d-flex me-3" action="{{ url_for('movies') }}" method="GET">

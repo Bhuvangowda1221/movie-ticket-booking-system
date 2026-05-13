@@ -57,26 +57,63 @@
         <h3 class="section-title">
             <i class="bi bi-clock text-danger"></i> Available Shows
         </h3>
-        <div class="row g-3 mt-3">
+
+        {% if shows %}
+            {% set ns = namespace(current_city='', current_theatre='') %}
             {% for show in shows %}
-            <div class="col-md-3 col-sm-6">
-                <div class="show-card text-center">
-                    <h5>{{ show.show_time }}</h5>
-                    <p class="text-muted mb-1">{{ show.screen }}</p>
-                    <p class="text-muted mb-2">{{ show.show_date }}</p>
-                    <p class="fw-bold text-danger fs-5">₹{{ show.price }}</p>
-                    <a href="{{ url_for('seats', show_id=show.show_id) }}"
-                       class="btn btn-outline-danger btn-sm w-100">
-                        <i class="bi bi-grid-3x3"></i> Select Seats
-                    </a>
-                </div>
-            </div>
-            {% else %}
-            <div class="col-12 text-center py-4">
+
+                {# New city group #}
+                {% if show.city_name != ns.current_city %}
+                    {% if ns.current_city != '' %}
+                        </div></div></div>
+                    {% endif %}
+                    {% set ns.current_city = show.city_name %}
+                    {% set ns.current_theatre = '' %}
+                    <div class="city-group mt-4">
+                        <h4 class="city-header">
+                            <i class="bi bi-geo-alt-fill text-danger"></i> {{ show.city_name }}, {{ show.state }}
+                        </h4>
+                {% endif %}
+
+                {# New theatre group #}
+                {% if show.theatre_name != ns.current_theatre %}
+                    {% if ns.current_theatre != '' %}
+                        </div></div>
+                    {% endif %}
+                    {% set ns.current_theatre = show.theatre_name %}
+                    <div class="theatre-group mt-3">
+                        <div class="d-flex align-items-center mb-2 flex-wrap">
+                            <h5 class="mb-0 me-3">
+                                <i class="bi bi-building text-danger"></i> {{ show.theatre_name }}
+                            </h5>
+                            <span class="badge bg-warning text-dark me-2">
+                                <i class="bi bi-star-fill"></i> {{ show.theatre_rating }}
+                            </span>
+                            <small class="text-muted">{{ show.address }}</small>
+                        </div>
+                        <div class="d-flex flex-wrap gap-3">
+                {% endif %}
+
+                            <div class="show-time-chip">
+                                <a href="{{ url_for('seats', show_id=show.show_id) }}" class="text-decoration-none">
+                                    <div class="show-chip-inner">
+                                        <span class="show-chip-time">{{ show.show_time }}</span>
+                                        <span class="show-chip-meta">{{ show.screen }} &#8226; &#8377;{{ show.price }}</span>
+                                    </div>
+                                </a>
+                            </div>
+
+                {# Close all groups at the end #}
+                {% if loop.last %}
+                        </div></div></div>
+                {% endif %}
+
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-4">
                 <p class="text-muted">No shows available at the moment.</p>
             </div>
-            {% endfor %}
-        </div>
+        {% endif %}
     </div>
     {% endif %}
 
